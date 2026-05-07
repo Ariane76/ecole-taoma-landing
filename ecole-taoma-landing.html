@@ -1,0 +1,131 @@
+-- ============================================
+-- ÉCOLE TAOMA — Table formations
+-- À exécuter dans Supabase SQL Editor
+-- ============================================
+
+create table if not exists formations (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  
+  -- Infos principales
+  titre text not null,
+  sous_titre text,
+  discipline text not null,         -- ex: "Shiatsu", "MTC", "Réflexologie"
+  tag text not null,                -- ex: "Shiatsu · 16h · ASCA"
+  kanji text,                       -- caractère décoratif
+  couleur_theme text default 'fc-h1', -- fc-h1 à fc-h6
+  
+  -- Logistique
+  duree_heures integer not null,    -- 8 ou 16
+  duree_label text not null,        -- ex: "2 jours (16h)"
+  lieu text not null,               -- ex: "Bienne" ou "En ligne"
+  participants_max integer,
+  prix numeric not null,
+  
+  -- Accréditation
+  asca boolean default true,
+  rme boolean default false,
+  
+  -- Contenu
+  extrait text not null,            -- résumé court pour la carte
+  description text,                 -- texte long pour la modal
+  contenu text[],                   -- liste des points du programme
+  prerequis text,
+  accreditation_detail text,
+  
+  -- Dates
+  prochaine_session date,
+  
+  -- Statut
+  actif boolean default true,
+  ordre integer default 0           -- pour trier l'affichage
+);
+
+-- RLS : lecture publique (landing page sans auth)
+alter table formations enable row level security;
+
+create policy "Lecture publique des formations actives"
+  on formations for select
+  using (actif = true);
+
+-- Insertion des 6 formations existantes
+insert into formations (titre, sous_titre, discipline, tag, kanji, couleur_theme, duree_heures, duree_label, lieu, participants_max, prix, asca, rme, extrait, description, contenu, prerequis, accreditation_detail, ordre) values
+
+('Prendre soin du praticien', null, 'Shiatsu', 'Shiatsu · 16h · ASCA', '気', 'fc-h1', 16, '2 jours (16h)', 'Bienne', 12, 380, true, false,
+'Ressourcer sa pratique, réguler sa propre énergie, éviter l''épuisement professionnel. Un programme central pour tout thérapeute en cabinet.',
+'Un programme conçu pour les thérapeutes en exercice qui veulent prendre soin d''eux-mêmes avec la même rigueur qu''ils appliquent à leurs clients. Le risque de burnout dans les métiers du soin est réel. Ce programme donne des outils concrets pour réguler, ressourcer et durer.',
+ARRAY[
+  'Gestion de son Qi en situation de soin : poser et lever les limites énergétiques',
+  'Protocoles d''auto-shiatsu sur les points-clés de récupération',
+  'Lecture des signaux d''alerte : quand le corps du thérapeute parle',
+  'Hygiène de vie en MTC : alimentation, sommeil, rythmes selon les saisons',
+  'Travail en binôme sur les séquences de récupération',
+  'Protocole de décompression post-séance applicable immédiatement'
+],
+'Pratique en exercice (shiatsu, réflexologie, massage ou équivalent). Pas de niveau avancé requis en MTC.',
+'16 heures comptabilisables pour votre quota ASCA annuel. Attestation remise à l''issue de la formation, à soumettre à formation.continue@asca.ch avant le 31 décembre.',
+1),
+
+('Le Shen, éclat du visage', null, 'Shiatsu visage', 'Shiatsu visage · 16h · ASCA', '神', 'fc-h2', 16, '2 jours (16h)', 'Bienne', 10, 420, true, false,
+'Travailler les méridiens faciaux, comprendre la relation Shen / visage, intégrer le shiatsu facial dans sa pratique clinique.',
+'Le visage n''est pas qu''une surface esthétique. En MTC, 6 méridiens principaux le traversent, reliant la peau aux organes profonds. Ce programme enseigne à travailler ces voies énergétiques avec précision, dans une perspective clinique.',
+ARRAY[
+  'Cartographie des méridiens faciaux et leurs correspondances organiques',
+  'La notion de Shen : comment le lire, comment le travailler',
+  'Points spécifiques du visage et leurs indications cliniques',
+  'Protocole de séance complet (60 min) — pratique en binôme',
+  'Intégration dans une séance de shiatsu corporel global',
+  'Contre-indications et précautions'
+],
+'Formation de base en shiatsu ou acupression. Connaissance des méridiens principaux recommandée.',
+'16 heures ASCA. Attestation fournie. À soumettre avant le 31 décembre à formation.continue@asca.ch.',
+2),
+
+('Les 5 Mouvements en clinique', null, 'MTC', 'MTC · 8h · ASCA/RME', '行', 'fc-h3', 8, '1 journée (8h)', 'Bienne', 15, 220, true, true,
+'Application pratique du Wu Xing : reconnaître les typologies, lire les déséquilibres émotionnels, orienter la séance selon les cycles.',
+'Le Wu Xing est souvent enseigné comme un système théorique. Ce programme l''aborde comme un outil clinique : comment reconnaître la typologie d''un client, comment les cycles de génération et de contrôle orientent concrètement votre protocole de séance.',
+ARRAY[
+  'Reconnaissance des typologies Bois/Feu/Terre/Métal/Eau en consultation',
+  'Émotions associées : lecture clinique, non symbolique',
+  'Cycles Sheng et Ke : utilisation pratique dans la séance',
+  'Cas cliniques commentés',
+  'Fiche de synthèse plastifiée fournie'
+],
+'Connaissance de base de la MTC. Ouvert à toute discipline (shiatsu, réflexologie, massage, naturopathie).',
+null,
+3),
+
+('Réflexologie et organes Zang-Fu', null, 'Réflexologie', 'Réflexologie · 16h · ASCA/RME', '足', 'fc-h4', 16, '2 jours (16h)', 'Bienne', 12, 380, true, true,
+'Croiser la réflexologie plantaire avec la vision des organes en MTC. Localisation précise, protocoles intégrés, schémas complets fournis.',
+'Croiser la réflexologie plantaire avec la vision énergétique des organes Zang-Fu enrichit considérablement la lecture clinique. Ce programme propose une cartographie intégrée, avec des schémas détaillés et des protocoles pratico-pratiques.',
+ARRAY[
+  'Les organes Zang-Fu : fonctions énergétiques vs anatomiques',
+  'Localisation précise des zones réflexes sur la plante du pied',
+  'Lecture combinée (réflexologie + MTC) d''un cas clinique',
+  'Protocoles de séance selon les déséquilibres identifiés',
+  'Schémas A4 haute résolution fournis (Reins, Foie, Rate, Poumon, Cœur)'
+],
+null, null, 4),
+
+('Qi, Sang et Substances en pratique', null, 'MTC', 'MTC · 8h · ASCA/RME', '血', 'fc-h5', 8, '1 journée (8h)', 'En ligne', 20, 190, true, true,
+'Identifier les vides et plénitudes des 4 substances, traduire les signes cliniques, adapter sa pratique. Format hybride possible.',
+'Vide de Qi, stagnation de Sang, vide de Jing : comprendre ces notions au niveau théorique ne suffit pas. Ce programme entraîne à les reconnaître dans le tableau clinique d''un vrai client et à adapter la séance en conséquence.',
+ARRAY[
+  'Les 4 substances : révision rapide et application clinique directe',
+  'Signes de vide vs signes de plénitude / stagnation',
+  'Arbres décisionnels : quel protocole selon quel tableau ?',
+  'Exercices de lecture clinique sur cas proposés'
+],
+null, null, 5),
+
+('Anamnèse et diagnostic en MTC', null, 'Clinique', 'Clinique · 16h · ASCA/RME', '診', 'fc-h6', 16, '2 jours (16h)', 'Bienne', 12, 420, true, true,
+'Structurer son entretien initial, poser des questions pertinentes, établir une analyse des déséquilibres reproductible et transmissible.',
+'L''entretien initial est la fondation de toute la pratique clinique. Ce programme enseigne à structurer une anamnèse MTC rigoureuse, à poser les bonnes questions dans le bon ordre, et à traduire ce que le client dit en un tableau énergétique exploitable.',
+ARRAY[
+  'Structure d''un entretien initial MTC : les 4 examens',
+  'Questions-clés par système d''organes',
+  'Prise du pouls et observation de la langue : bases cliniques',
+  'Fiche d''anamnèse complète prête à l''emploi fournie',
+  'Mise en situation filmée et débriefing en groupe'
+],
+null, null, 6);
